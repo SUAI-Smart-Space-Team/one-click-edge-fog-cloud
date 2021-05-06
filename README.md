@@ -90,7 +90,7 @@ python main.py -e ovirt --setup
 
 ## Configuration 
 
-Each module required set of input parameters. All parameters described in [docs](docs/Fog input parameters description.md). The required parameters for the modules are listed below.
+Each module required set of input parameters. All parameters described in [docs](https://github.com/SUAI-Smart-Space-Team/one-click-edge-fog-cloud/blob/main/docs/Fog%20input%20parameters%20description.md). The required parameters for the modules are listed below.
 
 #### **oVirt**
 
