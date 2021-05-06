@@ -1,0 +1,110 @@
+# Copyright (c) 2021 Dell Inc, or its subsidiaries.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- hosts: engine
+  become: yes
+
+  vars:
+    data_center_name: Default
+    data_center_local: true
+    compatibility_version: 4.3
+    ovirt_engine_setup_version: '4.3'
+    ovirt_engine_setup_answer_file_path: '../../ovirt/ovirt_answers'
+    hosts:
+      - name: Main
+        address: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+        cluster: Default
+        password: "{{ engine_password }}"
+
+  tasks:
+    - firewalld:
+        service: https
+        permanent: yes
+        state: enabled
+
+    - name: install dependencies
+      yum:
+        name: "{{ packages }}"
+        state: present
+        update_cache: true
+      vars:
+        packages:
+          - yum-utils
+          - epel-release
+          - bind-utils
+          - net-tools
+          - https://resources.ovirt.org/pub/yum-repo/ovirt-release43.rpm
+
+    - name: Upgrade all packages
+      yum:
+        name: '*'
+        state: latest
+
+    - name: enable tuned service
+      systemd:
+        name: tuned
+        state: started
+        enabled: yes
+
+    - name: change performance profile
+      shell: tuned-adm profile virtual-host
+
+    - name: add host name in /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}  {{ ovirt_domain_name }}"
+
+    - name: Remove /home/data
+      file:
+        path: /home/data
+        state: absent
+
+    - name: Create /home/data
+      file:
+        path: /home/data
+        state: directory
+        mode: '0777'
+
+    - name: Launch engine setup
+      include_role:
+        name: ovirt.engine-setup
+
+    - name: Copy cert
+      fetch:
+        src: /etc/pki/ovirt-engine/ca.pem
+        dest: ../../ovirt/
+        flat: yes
+
+    - name: Launch ovirt login role
+      include_role:
+        name: ../roles/ovirt.login
+
+    - name: Launch ovirt infra role
+      include_role:
+        name: ovirt.infra
+
+    - name: Create storage
+      ovirt_storage_domain:
+        auth: "{{ ovirt_auth }}"
+        name: Local
+        host: Main
+        state: present
+        data_center: Default
+        localfs:
+          path: /home/data
+
+    - name: Launch logout role
+      include_role:
+        name: ../roles/ovirt.logout
+
+
+

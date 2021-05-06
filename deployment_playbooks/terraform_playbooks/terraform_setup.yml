@@ -1,0 +1,148 @@
+# Copyright (c) 2021 Dell Inc, or its subsidiaries.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+---
+- name: Deploy terraform VM
+  hosts: engine
+  gather_facts: false
+
+  roles:
+    - { role: ../roles/ovirt.login }
+
+  vars:
+    wait_for_ip: yes
+
+  tasks:
+    - name: Create new vm with parameters for terraform
+      ovirt.ovirt.ovirt_vm:
+        auth: "{{ ovirt_auth }}"
+        state: running
+        name: "{{ terraform_vm_name }}"
+        template: "{{ terraform_template }}"
+        cluster: Default
+        memory: "{{ terraform_ram }}MiB"
+        cpu_cores: "{{ terraform_cpu }}"
+        high_availability: true
+        cloud_init:
+          host_name: "{{ terraform_domain_name }}"
+          user_name: "{{ terraform_login }}"
+          root_password: "{{ terraform_password }}"
+          nic_name: eth0
+          nic_boot_protocol: static
+          nic_ip_address: "{{ terraform_ip }}"
+          nic_netmask: "{{ terraform_netmask }}"
+          nic_gateway: "{{ terraform_gateway }}"
+          dns_servers: "{{ terraform_dns_servers }}"
+          dns_search: "{{ terraform_dns_search }}"
+
+    - name: Waiting vm create
+      wait_for:
+        timeout: 45
+
+- hosts: terraform
+  become: yes
+  tasks:
+
+   - name: install dependencies for terraform
+     yum:
+       name: "{{ packages }}"
+       state: present
+       update_cache: true
+     vars:
+       packages:
+       - yum-utils
+       - wget
+       - unzip
+       - git
+
+   - name: Launch fubarhouse role
+     include_role:
+       name: fubarhouse.golang
+
+   - name: save lastest terraform's version to register
+     shell:
+       cmd: curl -s https://api.github.com/repos/hashicorp/terraform/releases/latest | grep tag_name
+     register:
+       result
+
+   - name: download terraform bin
+     unarchive:
+       src: https://releases.hashicorp.com/terraform/0.12.29/terraform_0.12.29_linux_amd64.zip
+       dest: /usr/local/bin
+       remote_src: yes
+
+   - name: change PATH
+     lineinfile:
+       path: ~/.bash_profile
+       line: "export PATH=\"$PATH:~\""
+       create: yes
+
+   - name: reload profile
+     shell: source ~/.bash_profile
+
+   - name: download ovirt-provider
+     git:
+       repo: https://github.com/oVirt/terraform-provider-ovirt
+       dest: ~/terraform-provider-ovirt
+
+   - name: build terraform-ovirt-provider
+     make:
+       chdir: ~/terraform-provider-ovirt
+     environment:
+       - PATH: $PATH:/usr/local/go/bin:/usr/bin
+
+   - name: Create a directory if it does not exist
+     file:
+       path: ~/.terraform.d/plugins
+       state: directory
+       mode: '0755'
+
+   - name: Move oVirt plugin
+     shell: mv  ~/go/bin/terraform-provider-ovirt  ~/.terraform.d/plugins
+
+   - name: Create a directory for terraform main script
+     file:
+       path: ~/terraform/main
+       state: directory
+       mode: '0755'
+
+   - name: Create a directory for terraform vms module
+     file:
+       path: ~/terraform/modules/vms
+       state: directory
+       mode: '0755'
+
+   - name: Create a directory for terraform vms_without_net module
+     file:
+       path: ~/terraform/modules/vms_without_net
+       state: directory
+       mode: '0755'
+
+   - name: Create a directory for terraform disk module
+     file:
+       path: ~/terraform/modules/disk
+       state: directory
+       mode: '0755'
+
+   - name: Copy terraform main scripts to VM
+     copy:
+       src: ../../terraform/main/
+       dest: ~/terraform/main
+
+
+   - name: Copy terraform modules
+     copy:
+       src: ../../terraform/modules/
+       dest: ~/terraform/modules
+
+
+

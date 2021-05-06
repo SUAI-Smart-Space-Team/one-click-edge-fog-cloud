@@ -1,0 +1,90 @@
+# Copyright (c) 2021 Dell Inc, or its subsidiaries.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Create a template from qcow
+  hosts: engine
+  gather_facts: false
+
+  tasks:
+    - name: Create a directory for images if it does not exist
+      file:
+        path: /home/ova_images
+        state: directory
+        mode: '0755'
+
+    - name: Launch login role
+      include_role:
+        name: ../roles/ovirt.login
+
+    - name: Download image
+      get_url:
+        url: "{{ template_link }}"
+        dest: /home/ova_images
+
+    - name: Create disk from downloaded image
+      ovirt_disk:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ template_path }}"
+        size: 15GiB
+        format: cow
+        image_path: "/home/ova_images/{{ template_path }}"
+        storage_domain: Local
+
+    - name: Create a VM with QCOW2 disk
+      ovirt_vm:
+        auth: "{{ ovirt_auth }}"
+        state: running
+        name: assistant_vm
+        cluster: Default
+        memory: 5120MiB
+        cpu_cores: 2
+        high_availability: true
+        nics:
+          - name: nic1
+            interface: rtl8139
+            profile_name: ovirtmgmt
+        cloud_init:
+          user_name: "{{ template_login }}"
+          root_password: "{{ template_password }}"
+          nic_name: eth0
+          nic_boot_protocol: static
+          nic_ip_address: "{{ template_ip }}"
+          nic_netmask: "{{ template_netmask }}"
+          nic_gateway: "{{ template_gateway }}"
+          dns_servers: "{{ template_dns_servers }}"
+          dns_search: "{{ template_dns_search }}"
+        disks:
+          - name: "{{ template_path }}"
+            bootable: True
+
+    - name: Waiting vm creating
+      wait_for:
+        timeout: 120
+
+    - name: Stopping vm
+      ovirt_vm:
+        auth: "{{ ovirt_auth }}"
+        state: stopped
+        name: assistant_vm
+
+    - name: Create template from VM
+      ovirt_template:
+        auth: "{{ ovirt_auth }}"
+        cluster: Default
+        name: "{{ template_name }}"
+        vm: assistant_vm
+
+    - name: Remove ova VM
+      ovirt_vm:
+        auth: "{{ ovirt_auth }}"
+        state: absent
+        name: assistant_vm

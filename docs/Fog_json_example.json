@@ -1,0 +1,55 @@
+{
+  "fogs": [
+    {
+      "cloud_provider": {
+        "credential": {
+          "login": "YourLogin@internal",
+          "password": "Passwd"
+        },
+        "network": {
+          "dns_name": "server.your.domain"
+        }
+      },
+      "infrastructure_config": [
+        {
+          "name": "Ovirt",
+          "machine_role": {
+            "name": "ovirt server"
+          },
+          "credential": {
+            "login": "YourLogin",
+            "password": "YourPasswd!"
+          },
+          "network": {
+            "ip": "10.0.19.17"
+          }
+        },
+        {
+          "name": "terraform-vm",
+          "machine_role": {
+            "name": "terraform"
+          },
+          "operation_system": {
+            "name": "centos 7.6"
+          },
+          "credential": {
+            "login": "root",
+            "password": "emc"
+          },
+          "network": {
+            "dns_name": "terraform.dev.local",
+            "ip": "10.0.0.111",
+            "gateway": "10.0.0.1",
+            "netmask": "255.255.0.0",
+            "dns_search": "dev.local",
+            "dns_servers": "10.0.0.1"
+          },
+          "resource": {
+            "cpu": 2,
+            "ram": 5120
+          }
+        }
+      ]
+    }
+  ]
+}

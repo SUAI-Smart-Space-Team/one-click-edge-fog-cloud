@@ -1,0 +1,14 @@
+# IntelliJ project files
+
+
+.idea/
+ovirt/ca.pem
+ovirt/nics.json
+ovirt/ovirt_answers
+ovirt/templates.json
+ovirt/vms.json
+src/__pycache__/
+src/builder/__pycache__/
+src/configurator/__pycache__/
+src/product/__pycache__/
+test.py
