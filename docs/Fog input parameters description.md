@@ -2,7 +2,7 @@
 
 ## Note 
 
-Here we provide only a description of all Fog input parameters. Information about modules and their required parameters is described in [README](../README.md). The parameters provided below can be represented as [JSON file](Fog_json_example.json) or list of [environment variables](.env) (use `export $(cat .env | egrep -v "(^#.*|^$)" | xargs)` for export).
+Here we provide only a description of all Fog input parameters. Information about modules and their required parameters is described in [README](../README.md). The parameters provided below can be represented as [JSON file](Fog_json_example.json) or list of [environment variables](../.env) (use `export $(cat .env | egrep -v "(^#.*|^$)" | xargs)` for export).
 
 ## Parameters
 
