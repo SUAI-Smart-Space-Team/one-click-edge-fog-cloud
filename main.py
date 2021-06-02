@@ -11,8 +11,6 @@
  limitations under the License.
 """
 
-
-
 from src.director import *
 import argparse
 
@@ -52,7 +50,7 @@ if __name__ == "__main__":
                                  help="Setup Terraform")
     terraform_group.add_argument("--cleanup", dest='action', action='store_const', const="terraform_cleanup",
                                  help="Cleanup Terraform")
-    terraform_group.add_argument("--create_vm",  dest='action', action='store_const', const="terraform_create_vm",
+    terraform_group.add_argument("--create_vm", dest='action', action='store_const', const="terraform_create_vm",
                                  help="Create VMs listed in the input configuration")
 
     # create the parser for the "infra" command

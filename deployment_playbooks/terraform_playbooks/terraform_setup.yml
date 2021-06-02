@@ -46,7 +46,7 @@
 
     - name: Waiting vm create
       wait_for:
-        timeout: 45
+        timeout: 180
 
 - hosts: terraform
   become: yes
