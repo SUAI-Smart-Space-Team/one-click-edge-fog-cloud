@@ -10,7 +10,7 @@ pipeline
         {
             steps
             {
-                sh 'python3 main.py $configurator $module $action'
+                sh 'python3.9 main.py $configurator $module $action'
             }
         }
     }
