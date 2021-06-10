@@ -2,7 +2,7 @@ pipeline
 {
     agent 
     {
-       label 'Deploy2'
+       label 'ocefc'
     }
     stages 
     {
